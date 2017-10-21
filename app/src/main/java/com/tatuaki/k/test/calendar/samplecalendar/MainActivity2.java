@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -45,6 +46,8 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity2 extends Activity implements EasyPermissions.PermissionCallbacks {
+    private final String TAG = MainActivity2.class.getSimpleName();
+
     GoogleAccountCredential mCredential;
     private TextView mOutputText;
     private Button mCallApiButton;
@@ -69,15 +72,13 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         super.onCreate(savedInstanceState);
         LinearLayout activityLayout = new LinearLayout(this);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT);
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
         activityLayout.setLayoutParams(lp);
         activityLayout.setOrientation(LinearLayout.VERTICAL);
         activityLayout.setPadding(16, 16, 16, 16);
 
         ViewGroup.LayoutParams tlp = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
         mCallApiButton = new Button(this);
         mCallApiButton.setText(BUTTON_TEXT);
@@ -107,9 +108,8 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         setContentView(activityLayout);
 
         // Initialize credentials and service object.
-        mCredential = GoogleAccountCredential.usingOAuth2(
-                getApplicationContext(), Arrays.asList(SCOPES))
-                .setBackOff(new ExponentialBackOff());
+        mCredential = GoogleAccountCredential.usingOAuth2(getApplicationContext(),
+                Arrays.asList(SCOPES)).setBackOff(new ExponentialBackOff());
     }
 
 
@@ -121,6 +121,7 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
      * appropriate.
      */
     private void getResultsFromApi() {
+        Log.d(TAG, "getResultsFromApi");
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
         } else if (mCredential.getSelectedAccountName() == null) {
@@ -144,18 +145,16 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
      */
     @AfterPermissionGranted(REQUEST_PERMISSION_GET_ACCOUNTS)
     private void chooseAccount() {
-        if (EasyPermissions.hasPermissions(
-                this, Manifest.permission.GET_ACCOUNTS)) {
-            String accountName = getPreferences(Context.MODE_PRIVATE)
-                    .getString(PREF_ACCOUNT_NAME, null);
+        Log.d(TAG, "chooseAccount");
+        if (EasyPermissions.hasPermissions(this, Manifest.permission.GET_ACCOUNTS)) {
+            String accountName = getPreferences(Context.MODE_PRIVATE).getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
                 mCredential.setSelectedAccountName(accountName);
+                Log.d(TAG, "getResultsFromApi");
                 getResultsFromApi();
             } else {
                 // Start a dialog from which the user can choose an account
-                startActivityForResult(
-                        mCredential.newChooseAccountIntent(),
-                        REQUEST_ACCOUNT_PICKER);
+                startActivityForResult(mCredential.newChooseAccountIntent(), REQUEST_ACCOUNT_PICKER);
             }
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
@@ -179,9 +178,10 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
      *                    activity result.
      */
     @Override
-    protected void onActivityResult(
-            int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "onActivityResult requestCode " + requestCode + " resultCode " + resultCode);
+        // onActivityResult requestCode 1000 resultCode -1
         switch (requestCode) {
             case REQUEST_GOOGLE_PLAY_SERVICES:
                 if (resultCode != RESULT_OK) {
@@ -189,17 +189,15 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
                             "This app requires Google Play Services. Please install " +
                                     "Google Play Services on your device and relaunch this app.");
                 } else {
+                    Log.e(TAG, "onActivityResult to getResultsFromApi");
                     getResultsFromApi();
                 }
                 break;
             case REQUEST_ACCOUNT_PICKER:
-                if (resultCode == RESULT_OK && data != null &&
-                        data.getExtras() != null) {
-                    String accountName =
-                            data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+                if (resultCode == RESULT_OK && data != null && data.getExtras() != null) {
+                    String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
                     if (accountName != null) {
-                        SharedPreferences settings =
-                                getPreferences(Context.MODE_PRIVATE);
+                        SharedPreferences settings = getPreferences(Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = settings.edit();
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
@@ -260,29 +258,16 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         // Do nothing.
     }
 
-    /**
-     * Checks whether the device currently has a network connection.
-     *
-     * @return true if the device has a network connection, false otherwise.
-     */
     private boolean isDeviceOnline() {
-        ConnectivityManager connMgr =
-                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
         return (networkInfo != null && networkInfo.isConnected());
     }
 
-    /**
-     * Check that Google Play services APK is installed and up to date.
-     *
-     * @return true if Google Play Services is available and up to
-     * date on this device; false otherwise.
-     */
     private boolean isGooglePlayServicesAvailable() {
-        GoogleApiAvailability apiAvailability =
-                GoogleApiAvailability.getInstance();
-        final int connectionStatusCode =
-                apiAvailability.isGooglePlayServicesAvailable(this);
+        Log.d(TAG, "isGooglePlayServicesAvailable");
+        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        final int connectionStatusCode = apiAvailability.isGooglePlayServicesAvailable(this);
         return connectionStatusCode == ConnectionResult.SUCCESS;
     }
 
@@ -291,15 +276,12 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
      * Play Services installation via a user dialog, if possible.
      */
     private void acquireGooglePlayServices() {
-        GoogleApiAvailability apiAvailability =
-                GoogleApiAvailability.getInstance();
-        final int connectionStatusCode =
-                apiAvailability.isGooglePlayServicesAvailable(this);
+        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        final int connectionStatusCode = apiAvailability.isGooglePlayServicesAvailable(this);
         if (apiAvailability.isUserResolvableError(connectionStatusCode)) {
             showGooglePlayServicesAvailabilityErrorDialog(connectionStatusCode);
         }
     }
-
 
     /**
      * Display an error dialog showing that Google Play Services is missing
@@ -386,6 +368,7 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         @Override
         protected void onPreExecute() {
             mOutputText.setText("");
+            Log.d(TAG, "onPreExecute");
             mProgress.show();
         }
 

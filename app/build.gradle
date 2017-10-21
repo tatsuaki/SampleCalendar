@@ -3,6 +3,12 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.2"
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
     defaultConfig {
         applicationId "com.tatuaki.k.test.calendar.samplecalendar"
         minSdkVersion 19
@@ -71,7 +77,7 @@ dependencies {
     // compile 'com.google.firebase:firebase-core:11.0.4'
     compile 'com.google.firebase:firebase-core:9.0.2'
     // compile 'com.google.android.gms:play-services-auth:11.0.4'
-
+    compile 'com.google.android.gms:play-services-auth:9.0.2'
     compile 'pub.devrel:easypermissions:0.3.0'
     compile('com.google.api-client:google-api-client-android:1.23.0') {
         exclude group: 'org.apache.httpcomponents'
