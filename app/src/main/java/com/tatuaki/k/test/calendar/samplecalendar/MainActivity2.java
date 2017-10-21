@@ -36,6 +36,7 @@ import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.Events;
+import com.google.firebase.crash.FirebaseCrash;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -110,6 +111,9 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         // Initialize credentials and service object.
         mCredential = GoogleAccountCredential.usingOAuth2(getApplicationContext(),
                 Arrays.asList(SCOPES)).setBackOff(new ExponentialBackOff());
+
+        FirebaseCrash.log("Activity created");
+        FirebaseCrash.report(new Exception("My first Android non-fatal error"));
     }
 
 
@@ -150,17 +154,17 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
             String accountName = getPreferences(Context.MODE_PRIVATE).getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
                 mCredential.setSelectedAccountName(accountName);
-                Log.d(TAG, "getResultsFromApi");
+                Log.d(TAG, "getResultsFromApi accountName " + accountName);
                 getResultsFromApi();
             } else {
                 // Start a dialog from which the user can choose an account
                 startActivityForResult(mCredential.newChooseAccountIntent(), REQUEST_ACCOUNT_PICKER);
+                Log.d(TAG, "chooseAccount to startActivityForResult");
             }
         } else {
             // Request the GET_ACCOUNTS permission via a user dialog
             EasyPermissions.requestPermissions(
-                    this,
-                    "This app needs to access your Google account (via Contacts).",
+                    this, "This app needs to access your Google account (via Contacts).",
                     REQUEST_PERMISSION_GET_ACCOUNTS,
                     Manifest.permission.GET_ACCOUNTS);
         }
@@ -290,12 +294,9 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
      * @param connectionStatusCode code describing the presence (or lack of)
      *                             Google Play Services on this device.
      */
-    void showGooglePlayServicesAvailabilityErrorDialog(
-            final int connectionStatusCode) {
+    void showGooglePlayServicesAvailabilityErrorDialog(final int connectionStatusCode) {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
-        Dialog dialog = apiAvailability.getErrorDialog(
-                MainActivity2.this,
-                connectionStatusCode,
+        Dialog dialog = apiAvailability.getErrorDialog(MainActivity2.this, connectionStatusCode,
                 REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
     }
@@ -309,12 +310,11 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         private Exception mLastError = null;
 
         MakeRequestTask(GoogleAccountCredential credential) {
+            Log.d(TAG, "MakeRequestTask");
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-            mService = new com.google.api.services.calendar.Calendar.Builder(
-                    transport, jsonFactory, credential)
-                    .setApplicationName("Google Calendar API Android Quickstart")
-                    .build();
+            mService = new com.google.api.services.calendar.Calendar.Builder(transport, jsonFactory, credential)
+                    .setApplicationName("Google Calendar API Android Sample").build();
         }
 
         /**
@@ -324,7 +324,9 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
          */
         @Override
         protected List<String> doInBackground(Void... params) {
+            Log.d(TAG, "doInBackground");
             try {
+                Log.d(TAG, "doInBackground return getDataFromApi");
                 return getDataFromApi();
             } catch (Exception e) {
                 mLastError = e;
@@ -340,8 +342,10 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
          * @throws IOException
          */
         private List<String> getDataFromApi() throws IOException {
+            Log.d(TAG, "getDataFromApi");
             // List the next 10 events from the primary calendar.
             DateTime now = new DateTime(System.currentTimeMillis());
+            // DateTime end = new DateTime(System.currentTimeMillis() + 24 * 60 * 60 * 1000); // 24時間後を保持する変数
             List<String> eventStrings = new ArrayList<String>();
             Events events = mService.events().list("primary")
                     .setMaxResults(10)
@@ -351,15 +355,17 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
                     .execute();
             List<Event> items = events.getItems();
 
+            int length = items.size();
+            Log.w(TAG, "getDataFromApi length " + length);
             for (Event event : items) {
                 DateTime start = event.getStart().getDateTime();
                 if (start == null) {
                     // All-day events don't have start times, so just use
                     // the start date.
                     start = event.getStart().getDate();
+                    Log.w(TAG, "getDataFromApi event " + event.toString());
                 }
-                eventStrings.add(
-                        String.format("%s (%s)", event.getSummary(), start));
+                eventStrings.add(String.format("%s (%s)", event.getSummary(), start));
             }
             return eventStrings;
         }
