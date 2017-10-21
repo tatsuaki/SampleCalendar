@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1038613826049",
+    "firebase_url": "https://dynamic-now-844.firebaseio.com",
+    "project_id": "dynamic-now-844"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1038613826049:android:9f05e42a22c2c844",
+        "android_client_info": {
+          "package_name": "com.tatuaki.k.test.calendar.samplecalendar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1038613826049-38dclun6do8fvurnbon2p4sb1mgnoaj6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlk2gYtSevP1BZ8vcZQA0-3w2x7Zp2klo"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1038613826049-38dclun6do8fvurnbon2p4sb1mgnoaj6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

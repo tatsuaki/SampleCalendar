@@ -1,0 +1,84 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
+    defaultConfig {
+        applicationId "com.tatuaki.k.test.calendar.samplecalendar"
+        minSdkVersion 19
+        targetSdkVersion 25
+        versionCode 1000
+        versionName "0.9.0"
+    }
+    signingConfigs {
+        releasekey {
+            try {
+                File keystorePropertiesFile = file('../keystore/release.properties')
+                storeFile file('../keystore/keystore_k.jks')
+                Properties properties = new Properties()
+                keystorePropertiesFile.withInputStream {
+                    properties.load(it)
+                }
+                keyAlias properties.getProperty('KEY_ALIAS')
+                keyPassword properties.getProperty('KEYSTORE_PASSWORD')
+                storePassword properties.getProperty('KEYSTORE_PASSWORD')
+            } catch (e) {
+                throw new InvalidUserDataException("You should define KEYSTORE_PASSWORD and KEY_PASSWORD in release.properties.")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            zipAlignEnabled true
+            debuggable false
+            signingConfig signingConfigs.releasekey
+        }
+        debug {
+            minifyEnabled false
+            zipAlignEnabled true
+            debuggable true
+            // signingConfig signingConfigs.releasekey
+        }
+    }
+    applicationVariants.all { variant ->
+        if (variant.buildType.name.equals("release")) {
+            variant.outputs.each { output ->
+                if (output.outputFile != null && output.outputFile.name.endsWith('.apk')) {
+                    def list = "${applicationId}".split("\\.")
+                    def appname = list[list.length - 1]
+                    def newName = "${appname}_build${versionCode}.apk"
+                    output.outputFile = new File(output.outputFile.parent, newName)
+                }
+            }
+        } else if (variant.buildType.name.equals("debug")) {
+            variant.outputs.each { output ->
+                if (output.outputFile != null && output.outputFile.name.endsWith('.apk')) {
+                    def list = "${applicationId}".split("\\.")
+                    def appname = list[list.length - 1]
+                    def newName = "${appname}_build_debug${versionCode}.apk"
+                    output.outputFile = new File(output.outputFile.parent, newName)
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    // compile 'com.google.firebase:firebase-core:11.0.4'
+    compile 'com.google.firebase:firebase-core:9.0.2'
+    // compile 'com.google.android.gms:play-services-auth:11.0.4'
+
+    compile 'pub.devrel:easypermissions:0.3.0'
+    compile('com.google.api-client:google-api-client-android:1.23.0') {
+        exclude group: 'org.apache.httpcomponents'
+    }
+    compile('com.google.apis:google-api-services-calendar:v3-rev262-1.23.0') {
+        exclude group: 'org.apache.httpcomponents'
+    }
+
+}
+apply plugin: 'com.google.gms.google-services'
