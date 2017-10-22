@@ -14,8 +14,24 @@
       },
       "oauth_client": [
         {
+          "client_id": "1038613826049-fk0e8o2uh3c7rimangmhotvbdehhu74b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tatuaki.k.test.calendar.samplecalendar",
+            "certificate_hash": "21308e179bb66f599ca0255d66a4005e86855490"
+          }
+        },
+        {
           "client_id": "1038613826049-38dclun6do8fvurnbon2p4sb1mgnoaj6.apps.googleusercontent.com",
           "client_type": 3
+        },
+        {
+          "client_id": "1038613826049-1lvfmp7qfqhvi6f3qfd90k1gcnkc7ni2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tatuaki.k.test.calendar.samplecalendar",
+            "certificate_hash": "76b99cedc8a3dfb9ff8094b29dd85d09f641bf9f"
+          }
         }
       ],
       "api_key": [
