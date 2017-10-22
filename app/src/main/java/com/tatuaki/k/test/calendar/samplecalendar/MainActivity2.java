@@ -8,7 +8,6 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -27,7 +26,6 @@ import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException;
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException;
@@ -62,6 +60,7 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
     private Button mCallApiButton;
     private Button mCallApiButton2;
     private Button mCallApiButton3;
+    private Button mCallApiButton4;
     ProgressDialog mProgress;
 
     static final int REQUEST_ACCOUNT_PICKER = 1000;
@@ -72,6 +71,10 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
     private static final String BUTTON_TEXT = "Call Google Calendar API";
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {CalendarScopes.CALENDAR_READONLY, CalendarScopes.CALENDAR};
+
+    private static final int EVENT_TYPE_SHORT = 1;
+    private static final int EVENT_TYPE_LONG = 2;
+
     /**
      * Create the main activity.
      *
@@ -92,7 +95,7 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
 
         mCallApiButton = new Button(this);
         //     private static final String BUTTON_TEXT = "Call Google Calendar API";
-        mCallApiButton.setText("Call Google Calendar API ListGet");
+        mCallApiButton.setText("Primary Google Calendar List");
         mCallApiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -105,12 +108,12 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         activityLayout.addView(mCallApiButton);
 
         mCallApiButton2 = new Button(this);
-        mCallApiButton2.setText("Calendar Creaete");
+        mCallApiButton2.setText("Custom Calendar Creaete");
         mCallApiButton2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mCallApiButton2.setEnabled(false);
-                mOutputText.setText("Calendar Creaete");
+                mOutputText.setText("Custom Calendar Creaete");
                 getResultsFromApi2();
                 mCallApiButton2.setEnabled(true);
             }
@@ -118,17 +121,30 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         activityLayout.addView(mCallApiButton2);
 
         mCallApiButton3 = new Button(this);
-        mCallApiButton3.setText("Creaete Event");
+        mCallApiButton3.setText("EVENT_TYPE_SHORT Creaete");
         mCallApiButton3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mCallApiButton3.setEnabled(false);
-                mOutputText.setText("Creaete Event");
-                getResultsFromApi3();
+                mOutputText.setText("EVENT_TYPE_SHORT Creaete");
+                getResultsCreateEvent(EVENT_TYPE_SHORT);
                 mCallApiButton3.setEnabled(true);
             }
         });
         activityLayout.addView(mCallApiButton3);
+
+        mCallApiButton4 = new Button(this);
+        mCallApiButton4.setText("EVENT_TYPE_LONG Creaete");
+        mCallApiButton4.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCallApiButton4.setEnabled(false);
+                mOutputText.setText("EVENT_TYPE_LONG Creaete");
+                getResultsCreateEvent(EVENT_TYPE_LONG);
+                mCallApiButton4.setEnabled(true);
+            }
+        });
+        activityLayout.addView(mCallApiButton4);
 
         mOutputText = new TextView(this);
         mOutputText.setLayoutParams(tlp);
@@ -172,29 +188,29 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
             // 端末がインターネットに接続されていない場合
             mOutputText.setText("No network connection available.");
         } else {
-            Log.e(TAG, "getResultsFromApi to new MakeRequestTask2");
-            new MakeRequestTask2(mGoogleAccountCredential).execute();
+            Log.e(TAG, "getResultsFromApi to new MakeCustomCalendarTask");
+            new MakeCustomCalendarTask(mGoogleAccountCredential, EVENT_TYPE_SHORT).execute();
         }
     }
 
     /**
      * 新規カレンダー作成
      */
-    private void getResultsFromApi3() {
-        Log.d(TAG, "getResultsFromApi3");
+    private void getResultsCreateEvent(int eventType) {
+        Log.d(TAG, "getResultsCreateEvent eventType " + eventType);
         if (!isGooglePlayServicesAvailable()) {
             // Google Play Services が無効
             acquireGooglePlayServices();
         } else if (mGoogleAccountCredential.getSelectedAccountName() == null) {
             // 有効な Google アカウントが選択されていない
-            Log.d(TAG, "getResultsFromApi3 to chooseAccount");
+            Log.d(TAG, "getResultsCreateEvent to chooseAccount");
             chooseAccount();
         } else if (!isDeviceOnline()) {
             // 端末がインターネットに接続されていない場合
             mOutputText.setText("No network connection available.");
         } else {
-            Log.e(TAG, "getResultsFromApi to new MakeRequestTask3");
-            new MakeRequestTask3(mGoogleAccountCredential).execute();
+            Log.e(TAG, "getResultsFromApi to new MakeRequestCreateEvent");
+            new MakeRequestCreateEvent(mGoogleAccountCredential, eventType).execute();
         }
     }
 
@@ -245,10 +261,10 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
 
     /**
      * Google　Calendar API の認証情報を使用するGoogleアカウントを設定する。
-     *
+     * <p>
      * 既にGoogleアカウント名が保存されていればそれを使用し、保存されていなければ、
      * Googleアカウントの選択ダイアログを表示する。
-     *
+     * <p>
      * 認証情報を用いたGoogleアカウントの設定には、"GET_ACCOUNTS"パーミッションを
      * 必要とするため、必要に応じてユーザーに"GET_ACCOUNTS"パーミッションを要求する
      * ダイアログが表示する。
@@ -412,7 +428,7 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
 
     /**
      * 非同期で　Google Calendar API の呼び出しを行うクラス。
-     *
+     * <p>
      * An asynchronous task that handles the Google Calendar API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
@@ -461,6 +477,8 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
             Log.e(TAG, "getDataFromApi now " + now);
             // DateTime end = new DateTime(System.currentTimeMillis() + 24 * 60 * 60 * 1000); // 24時間後を保持する変数
             List<String> eventStrings = new ArrayList<String>();
+            // 個々のイベントにアクセスするには、これで得られるイベントIDを使う。
+            // デフォルトのカレンダーを対象にする場合は、カレンダーIDに固定の文字列’primary’を指定すればOK。
             Events events = mService.events().list("primary")
                     .setMaxResults(10)
                     .setTimeMin(now)
@@ -510,7 +528,7 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
             if (mLastError != null) {
                 if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
                     showGooglePlayServicesAvailabilityErrorDialog(((GooglePlayServicesAvailabilityIOException) mLastError)
-                                    .getConnectionStatusCode());
+                            .getConnectionStatusCode());
                 } else if (mLastError instanceof UserRecoverableAuthIOException) {
                     startActivityForResult(((UserRecoverableAuthIOException) mLastError).getIntent(), MainActivity2.REQUEST_AUTHORIZATION);
                 } else {
@@ -526,16 +544,19 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
     /***********************************************************************************************************************/
     /**
      * 非同期で　Google Calendar API の呼び出しを行うクラス。
-     *
+     * <p>
      * An asynchronous task that handles the Google Calendar API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
-    private class MakeRequestTask2 extends AsyncTask<Void, Void, String> {
+    private class MakeCustomCalendarTask extends AsyncTask<Void, Void, String> {
 
         private com.google.api.services.calendar.Calendar mService = null;
         private Exception mLastError = null;
+        private int EVET_TYPE = EVENT_TYPE_SHORT;
 
-        public MakeRequestTask2(GoogleAccountCredential credential) {
+        public MakeCustomCalendarTask(GoogleAccountCredential credential, int type) {
+            Log.d(TAG, "MakeCustomCalendarTask type " + type);
+            EVET_TYPE = type;
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.calendar.Calendar
@@ -552,7 +573,7 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         @Override
         protected String doInBackground(Void... params) {
             try {
-                return createCalendar();
+                return createCalendar(EVET_TYPE);
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
@@ -566,31 +587,44 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
          * @return 作成したカレンダーのID
          * @throws IOException
          */
-        private String createCalendar() throws IOException {
+        private String createCalendar(int eventType) throws IOException {
             Log.d(TAG, "createCalendar");
-            // 新規にカレンダーを作成する
-            com.google.api.services.calendar.model.Calendar calendar = new Calendar();
-            // カレンダーにタイトルを設定する
-            calendar.setSummary("EventSampleCalendar");
-            // カレンダーにタイムゾーンを設定する
-            calendar.setTimeZone("Asia/Tokyo");
 
-            // 作成したカレンダーをGoogleカレンダーに追加する
-            Calendar createdCalendar = mService.calendars().insert(calendar).execute();
-            String calendarId = createdCalendar.getId();
-            Log.w(TAG, "calendarId " + calendarId);
-            // カレンダー一覧から新規に作成したカレンダーのエントリを取得する
-            CalendarListEntry calendarListEntry = mService.calendarList().get(calendarId).execute();
+            // カレンダーID取得
+            SharedPreferences preferences = getSharedPreferences("Calendar", Context.MODE_PRIVATE);
+            String calendarId = preferences.getString("★Sample", null);
 
-            // カレンダーのデフォルトの背景色を設定する
-            calendarListEntry.setBackgroundColor("#ff0000");
+            if (TextUtils.isEmpty(calendarId)) {
+                // 新規にカレンダーを作成する
+                com.google.api.services.calendar.model.Calendar calendar = new Calendar();
+                // カレンダーにタイトルを設定する
+                calendar.setSummary("★Sample");
+                // カレンダーにタイムゾーンを設定する
+                calendar.setTimeZone("Asia/Tokyo");
+                // 作成したカレンダーをGoogleカレンダーに追加する
+                Calendar createdCalendar = mService.calendars().insert(calendar).execute();
+                calendarId = createdCalendar.getId();
 
-            // カレンダーのデフォルトの背景色をGoogleカレンダーに反映させる
-            CalendarListEntry updatedCalendarListEntry =
-                    mService.calendarList().update(calendarListEntry.getId(), calendarListEntry)
-                            .setColorRgbFormat(true)
-                            .execute();
-            // 新規に作成したカレンダーのIDを返却する
+                // カレンダー一覧から新規に作成したカレンダーのエントリを取得する
+                CalendarListEntry calendarListEntry = mService.calendarList().get(calendarId).execute();
+                // カレンダーのデフォルトの背景色を設定する
+                calendarListEntry.setBackgroundColor("#ff0000");
+
+                // カレンダーのデフォルトの背景色をGoogleカレンダーに反映させる
+                CalendarListEntry updatedCalendarListEntry = mService.calendarList().update(calendarListEntry.getId(), calendarListEntry)
+                        .setColorRgbFormat(true)
+                        .execute();
+                // 新規に作成したカレンダーのIDを返却する
+
+                // TODO カレンダ^ID保存
+                preferences = getSharedPreferences("Calendar", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putString("★Sample", calendarId);
+                editor.commit();
+            } else {
+                Log.w(TAG, "createCalendar 存在");
+            }
+            Log.w(TAG, "createCalendar calendarId " + calendarId);
             return calendarId;
         }
 
@@ -633,17 +667,19 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
 
     /***********************************************************************************************************************/
     /**
-     * 非同期で　Google Calendar API の呼び出しを行うクラス。
-     *
+     * 非同期で　Google Calendar API の呼び出しを行うクラス。 3
+     * <p>
      * An asynchronous task that handles the Google Calendar API call.
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
-    private class MakeRequestTask3 extends AsyncTask<Void, Void, String> {
+    private class MakeRequestCreateEvent extends AsyncTask<Void, Void, String> {
 
         private com.google.api.services.calendar.Calendar mService = null;
         private Exception mLastError = null;
+        private int EVET_TYPE = EVENT_TYPE_SHORT;
 
-        public MakeRequestTask3(GoogleAccountCredential credential) {
+        public MakeRequestCreateEvent(GoogleAccountCredential credential, int eventType) {
+            EVET_TYPE = eventType;
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.calendar.Calendar.Builder(transport, jsonFactory, credential)
@@ -659,42 +695,25 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         @Override
         protected String doInBackground(Void... params) {
             try {
-                return setEventCalendar();
+                return setEventCalendar(EVET_TYPE);
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
                 return null;
             }
         }
-        /*
-         * カレンダーIDで予定を取得
-         */
-        public Events getEvents(String calendarId, com.google.api.services.calendar.Calendar client, Date startDate,
-                                Date endDate) throws IOException {
-            DateTime start = new DateTime(startDate,
-                    TimeZone.getTimeZone("Asia/Tokyo"));
-            DateTime end = new DateTime(endDate, TimeZone.getTimeZone("Asia/Tokyo"));
-            com.google.api.services.calendar.Calendar.Events.List calendar = client.events().list(calendarId);
-            calendar.setTimeMin(start);
-            calendar.setTimeMax(end);
-            calendar.setTimeZone("Asia/Tokyo");
-            calendar.setOrderBy("startTime");
-            calendar.setSingleEvents(true);
-
-            Events events = calendar.execute();
-            return events;
-        }
 
         /**
          * カレンダーイベント新規作成
+         *
          * @throws IOException
          */
-        public String apply(com.google.api.services.calendar.Calendar client, String calendarId, Date startDate, Date endDate) throws IOException{
+        public String apply(com.google.api.services.calendar.Calendar client, String calendarId, Date startDate, Date endDate, String colorId) throws IOException {
             Event event = new Event();
 
-            event.setSummary("sampleEvent");
-            event.setDescription("calendarId " + calendarId);
-            event.setColorId("2");
+            event.setSummary("★Event");
+            event.setDescription("<a href=calendarSample://test/sample>to app launch!</a>" + " calendarId " + calendarId);
+            event.setColorId(colorId);
 
             DateTime start = new DateTime(startDate, TimeZone.getTimeZone("Asia/Tokyo"));
             event.setStart(new EventDateTime().setDateTime(start));
@@ -703,76 +722,64 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
 
             // TODO 新規イベント作成
             Event createdEvent = client.events().insert(calendarId, event).execute();
+            Log.d(TAG, "setEventCalendar createdEvent.getId()" + createdEvent.getId());
             return createdEvent.getId();
         }
 
-        /**
-         * カレンダーイベント変更
-         *
-         * eventをnewせず取得してカレンダーIDとイベントIDを指定してupdateすればOK
-         * https://developers.google.com/google-apps/calendar/v3/reference/events/update?hl=ja
-         * @throws IOException
-         */
-        public String update(com.google.api.services.calendar.Calendar client, String calendarId, String eventId,
-                             Date startDate, Date endDate) throws IOException{
-            Event event = client.events().get(calendarId, eventId).execute();
-            if(event == null)  {
-                return null;
-            }
-            event.setSummary("タイトル");
-            event.setDescription("詳細");
-            event.setColorId("2");
-
-            DateTime start = new DateTime(startDate, TimeZone.getTimeZone("Asia/Tokyo"));
-            event.setStart(new EventDateTime().setDateTime(start));
-            DateTime end = new DateTime(endDate, TimeZone.getTimeZone("Asia/Tokyo"));
-            event.setEnd(new EventDateTime().setDateTime(end));
-
-            Event updatedEvent = client.events().update(calendarId, event.getId(), event).execute();
-
-            return updatedEvent.getId();
-        }
         /**
          * 選択されたGoogleアカウントに対して、新規にカレンダーを追加する。
          *
          * @return 作成したカレンダーのID
          * @throws IOException
          */
-        private String setEventCalendar() throws IOException {
-            Log.d(TAG, "setEventCalendar");
-            // 新規にカレンダーを作成する
-            com.google.api.services.calendar.model.Calendar calendar = new Calendar();
-            // カレンダーにタイトルを設定する
-            calendar.setSummary("EventSampleCalendar");
-            // カレンダーにタイムゾーンを設定する
-            calendar.setTimeZone("Asia/Tokyo");
+        private String setEventCalendar(int eventType) throws IOException {
+            Log.d(TAG, "setEventCalendar eventType " + eventType);
 
-            // 作成したカレンダーをGoogleカレンダーに追加する
-            Calendar createdCalendar = mService.calendars().insert(calendar).execute();
-            String calendarId = createdCalendar.getId();
+            // カレンダーID取得
+            SharedPreferences preferences = getSharedPreferences("Calendar", Context.MODE_PRIVATE);
+            String calendarId = preferences.getString("★Sample", null);
+
+            if (TextUtils.isEmpty(calendarId)) {
+                Log.d(TAG, "setEventCalendar 新規にカレンダーを作成");
+                // 新規にカレンダーを作成する
+                com.google.api.services.calendar.model.Calendar calendar = new Calendar();
+                // カレンダーにタイトルを設定する
+                calendar.setSummary("★Sample");
+                // カレンダーにタイムゾーンを設定する
+                calendar.setTimeZone("Asia/Tokyo");
+
+                // 作成したカレンダーをGoogleカレンダーに追加する
+                Calendar createdCalendar = mService.calendars().insert(calendar).execute();
+                calendarId = createdCalendar.getId();
+                // TODO カレンダ^ID保存
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putString("★Sample", calendarId);
+                editor.commit();
+            } else {
+                Log.d(TAG, "setEventCalendar カレンダー存在");
+            }
             Log.w(TAG, "calendarId " + calendarId);
 
-            // (com.google.api.services.calendar.Calendar client, String calendarId,Date startDate, Date endDate)
+            String eventId = null;
+            if (eventType == EVENT_TYPE_SHORT) {
+                Date startDate = new Date(System.currentTimeMillis());
+                // Date endDate = new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000); // 24時間後を保持する変数
+                Date endDate = new Date(System.currentTimeMillis() + 60 * 60 * 1000); // 1時間後を保持する変数
+                Log.e(TAG, "getDataFromApi startDate " + startDate + " endDate " + endDate);
+                eventId = apply(mService, calendarId, startDate, endDate, "2");
+            } else {
+                Date startDate = new Date(System.currentTimeMillis());
+                // Date endDate = new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000); // 24時間後を保持する変数
+                Date endDate = new Date(System.currentTimeMillis() + 24 * 3 * 60 * 60 * 1000); // 三日間
+                Log.e(TAG, "getDataFromApi startDate " + startDate + " endDate " + endDate);
+                eventId = apply(mService, calendarId, startDate, endDate, "5");
+            }
 
-            Date startDate = new Date(System.currentTimeMillis());
-            // Date endDate = new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000); // 24時間後を保持する変数
-            Date endDate = new Date(System.currentTimeMillis() + 60 * 60 * 1000); // 1時間後を保持する変数
-            Log.e(TAG, "getDataFromApi startDate " + startDate + " endDate " + endDate);
+            Log.e(TAG, "setEventCalendar eventId " + eventId);
+            // カレンダーリストを返却する
 
-            apply(mService, calendarId, startDate, endDate);
-            // カレンダー一覧から新規に作成したカレンダーのエントリを取得する
-//            CalendarListEntry calendarListEntry = mService.calendarList().get(calendarId).execute();
-//
-//            // カレンダーのデフォルトの背景色を設定する
-//            calendarListEntry.setBackgroundColor("#ff0000");
-//
-//            // カレンダーのデフォルトの背景色をGoogleカレンダーに反映させる
-//            CalendarListEntry updatedCalendarListEntry =
-//                    mService.calendarList().update(calendarListEntry.getId(), calendarListEntry)
-//                            .setColorRgbFormat(true)
-//                            .execute();
-//            // 新規に作成したカレンダーのIDを返却する
-            return calendarId;
+            String list = showList(calendarId);
+            return list;
         }
 
         @Override
@@ -782,13 +789,52 @@ public class MainActivity2 extends Activity implements EasyPermissions.Permissio
         }
 
         @Override
-        protected void onPostExecute(String output) {
+        protected void onPostExecute(String calendarList) {
+            Log.e(TAG, "onPostExecute calendarList " + calendarList);
             mProgress.hide();
-            if (output == null || output.isEmpty()) {
+            if (calendarList == null || calendarList.isEmpty()) {
                 mOutputText.setText("No results returned.");
             } else {
-                mOutputText.setText("Calendar created using the Google Calendar API: " + output);
+                mOutputText.setText("Calendar calendarList::\n " + calendarList);
             }
+        }
+
+        private String showList(String calendarId) {
+            DateTime now = new DateTime(System.currentTimeMillis());
+            Log.e(TAG, "showList calendarId " + calendarId + " now " + now);
+            // DateTime end = new DateTime(System.currentTimeMillis() + 24 * 60 * 60 * 1000); // 24時間後を保持する変数
+            List<String> eventStrings = new ArrayList<String>();
+            try {
+                Events events = mService.events().list(calendarId)
+                        .setMaxResults(10)
+                        .setTimeMin(now)
+                        .setTimeZone("Asia/Tokyo")
+                        .setOrderBy("startTime")
+                        .setSingleEvents(true)
+                        .execute();
+                List<Event> items = events.getItems();
+
+                int length = items.size();
+                Log.w(TAG, "showList length " + length);
+                for (Event event : items) {
+                    DateTime start = event.getStart().getDateTime();
+                    if (start == null) {
+                        start = event.getStart().getDate();
+                    }
+                    DateTime end = event.getEnd().getDateTime();
+                    if (end == null) {
+                        end = event.getEnd().getDate();
+                    }
+                    Log.w(TAG, "showList start " + start + " end " + end);
+                    eventStrings.add(String.format("%s \n (start %s) \n (end %s)", event.getSummary(), start, end));
+                    // eventStrings.add(String.format("%s (%s)", event.toString(), start));
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "showList Exception " + e.getMessage());
+            }
+            String listData = TextUtils.join("\n", eventStrings);
+            Log.w(TAG, "showList listData " + listData);
+            return listData;
         }
 
         @Override
